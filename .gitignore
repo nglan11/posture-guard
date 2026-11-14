@@ -1,4 +1,9 @@
 .venv/
+.python/
+.tools/
+*.egg-info/
+data/models/*.task
+tmp/
 __pycache__/
 *.py[cod]
 .pytest_cache/
