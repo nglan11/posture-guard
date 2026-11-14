@@ -1,49 +1,56 @@
 ﻿# Posture Guard
 
-Ứng dụng desktop kiểm tra landmarks khuôn mặt từ webcam bằng OpenCV và MediaPipe Tasks. Giao diện tiếng Việt dùng Tkinter; xử lý camera ở luồng riêng, chỉ giữ khung hình mới nhất để tránh tích tụ độ trễ.
+Sườn giao diện desktop cho ứng dụng giám sát tư thế ngồi và khoảng cách nhìn gần bằng webcam. **Phần việc của thành viên 1 là giao diện và phát hiện điểm mốc khuôn mặt.** Các thuật toán tư thế, khoảng cách, hiệu chuẩn và cảnh báo do các thành viên phụ trách module tương ứng triển khai.
 
-## Cài đặt (Windows, Python 3.12)
+## Chạy demo
+
+Trên máy đã cài môi trường, nhấp đúp **run.cmd** hoặc chạy PowerShell:
+
+```powershell
+cd D:\posture-guard
+.\.venv\Scripts\python.exe -m posture_guard.main
+```
+
+Cài trên máy khác có Python 3.12:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/setup.ps1
-./.venv/Scripts/python.exe -m posture_guard.main
+.\.venv\Scripts\python.exe -m posture_guard.main
 ```
 
-Nếu máy chưa có Python, cài Python 3.12 với pip và Tcl/Tk. Script cũng hỗ trợ Python riêng tại `.python/python.exe`. Model chính thức của Google được tải vào `data/models/face_landmarker.task`; sau cài đặt ứng dụng xử lý tại máy, không gửi hay lưu hình webcam.
+## Nội dung demo hiện tại
 
-## Kiểm tra webcam
+1. Nhấn **Bật camera**. Camera mặc định được chọn sẵn; nhấn **Đổi** nếu muốn chọn camera khác.
+2. Đưa mặt vào khung hình để xem trạng thái phát hiện khuôn mặt và landmarks thực tế.
+3. Chọn **Lưới khuôn mặt**, **Các điểm mốc** hoặc **Ảnh gốc**; bật/tắt **Xem như trong gương**.
+4. Nhấn **Hiện thông số** nếu cần xem FPS, số điểm mốc, thời gian suy luận và thời gian phiên.
+5. Nhấn **Dừng** để đóng webcam. **Chi tiết phiên** hiển thị số liệu xử lý của phiên hiện tại hoặc vừa kết thúc.
 
-Chọn camera 0, nhấn **Bắt đầu**. Thử nhìn thẳng, quay/nghiêng đầu, đeo kính và thay đổi ánh sáng. Theo dõi FPS, thời gian suy luận, số landmarks và tỷ lệ khung hình có mặt. Nhấn **Dừng**, sau đó **Lưu kết quả** để ghi JSON tại `results/logs/`.
+**Không yêu cầu người dùng có thước hoặc đo thủ công khi chạy demo.** Phần giao diện không tự đặt phương pháp hiệu chuẩn hay ngưỡng cảnh báo thay cho module của nhóm.
 
-Chạy kiểm tra 30 giây không có cửa sổ xem trước:
+## Sườn giao diện cho các phần tiếp theo
+
+| Khu vực | Trạng thái hiện tại | Điểm tích hợp |
+|---|---|---|
+| Webcam và landmarks | Đã chạy bằng OpenCV + MediaPipe Face Landmarker | `CameraWorker` trả `FaceFrame` với tọa độ thật |
+| Tư thế | Chưa kết nối | Nhận trạng thái từ module tư thế |
+| Khoảng cách | Chưa kết nối | Nhận số đo centimet hợp lệ từ module khoảng cách |
+| Hiệu chuẩn | Chưa kết nối | Nhận tiến trình/kết quả từ module hiệu chuẩn |
+| Cảnh báo | Chưa kết nối | Nhận thông báo từ module cảnh báo |
+
+Các ô chưa tích hợp hiển thị **Chưa kết nối**, không hiển thị giá trị khoảng cách hoặc tư thế giả. Khi có module thật, nhóm gửi `MonitoringSnapshot` qua `MainWindow.publish_monitoring_state()`; giao diện chỉ trình bày kết quả. Khi dừng, mất luồng hình hoặc kết quả hết hạn, các số đo giám sát cũ được xóa.
+
+Đây là bản demo **giao diện + khuôn mặt** và khung tích hợp tiếp theo, chưa phải hệ thống đã hoàn thành tất cả thuật toán. Không có các tab giả thuyết nghiên cứu trong giao diện sử dụng.
+
+Hướng dẫn kết nối: [docs/face_module_interface.md](docs/face_module_interface.md).
+
+## Kiểm tra và xử lý lỗi
 
 ```powershell
-./.venv/Scripts/python.exe scripts/check_webcam.py --seconds 30 --camera 0
-./.venv/Scripts/python.exe -m unittest discover -s tests -p test_webcam_runtime.py -v
+.\.venv\Scripts\python.exe -m unittest discover -s tests -v
+.\.venv\Scripts\python.exe scripts/check_webcam.py --seconds 30 --camera 0
 ```
 
-Trong phiên đo, ngồi trước camera. FPS trung bình và p95 thời gian suy luận giúp đánh giá hiệu năng; tỷ lệ phát hiện phụ thuộc việc có mặt trong khung hình. Mục tiêu tham khảo: khoảng 25–30 FPS, p95 suy luận dưới 40 ms trong điều kiện đủ sáng. Đây không phải kết quả thực nghiệm hay bảo đảm cho mọi laptop. Kiểm tra thêm bằng mắt để đánh giá rung/mất điểm khi chuyển động. Thời gian suy luận không bao gồm toàn bộ độ trễ camera–màn hình.
+Nếu camera không mở: đóng Zoom/Teams/Camera, bật quyền camera cho ứng dụng desktop trong Windows Settings hoặc chọn camera khác. Ứng dụng xử lý tại máy, không gửi hay ghi hình webcam. Script kiểm tra chỉ ghi thông số JSON tại `results/logs/webcam-check.json`.
 
-Nếu không mở được webcam: đóng Teams/Zoom/Camera, bật quyền camera cho ứng dụng desktop trong Windows Settings, thử chỉ số camera khác.
-
-## Hiệu chuẩn và cảnh báo khoảng cách
-
-1. Mở webcam, dùng thước đặt mặt cách **webcam 50 cm**.
-2. Nhấn **Hiệu chuẩn 50 cm**, nhìn thẳng và giữ mặt trong oval. Giữ yên cho đến khi nhận đủ 30 mẫu trong ít nhất 1 giây; mẫu dao động quá 4% sẽ được lấy lại.
-3. Khoảng cách được ước lượng bằng `50 × baseline_pixel / pixel_hiện_tại`, có làm mượt. Khi khoảng cách pixel hai tâm mống mắt tăng hơn 25% liên tục hơn 2 giây, giao diện hiển thị cảnh báo đỏ.
-
-Oval hướng dẫn vị trí, không tự xác định mốc 50 cm. Hiệu chuẩn chỉ có hiệu lực trong phiên camera; cần làm lại khi khởi động, đổi người, webcam, độ phân giải hoặc vị trí camera. Không nhìn thẳng, mất mặt hoặc nằm ngoài oval sẽ không có số đo hợp lệ và sẽ xóa bộ đếm cảnh báo. Bộ lọc 2D chỉ hạn chế góc mặt không phù hợp, không thay thế ước lượng tư thế đầu 3D.
-
-Ngưỡng +25% tương ứng khoảng 40 cm với baseline 50 cm theo mô hình lý tưởng; **khác ngưỡng 33 cm** ở phần đánh giá trong đề cương. Phiên bản này dùng quy tắc +25% / hơn 2 giây. Khoảng cách tính đến webcam, không mặc định là mặt phẳng màn hình. Chưa xác minh sai số bằng thước thực nghiệm.
-
-Kiểm tra tất cả logic đã triển khai:
-
-```powershell
-./.venv/Scripts/python.exe -m unittest discover -s tests -v
-```
-
-## Phạm vi
-
-Phiên bản này định vị các điểm mốc khuôn mặt, hiệu chuẩn khoảng cách theo phiên và cảnh báo nhìn gần; chưa nhận dạng danh tính. Các module tư thế, hồ sơ hiệu chuẩn lâu dài, lịch sử và các phần nghiên cứu 3DMM vẫn là scaffold; chưa có kết luận độ chính xác ±3 cm.
-
-API tham khảo: https://ai.google.dev/edge/mediapipe/solutions/vision/face_landmarker/python
+FPS đo luồng lấy hình–nhận diện–vẽ. Thời gian suy luận chỉ đo Face Landmarker, không phải độ trễ toàn bộ camera–màn hình. Số khung hình phát hiện mặt không phải độ chính xác nhận diện.

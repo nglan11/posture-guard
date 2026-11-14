@@ -2,6 +2,8 @@
 from pathlib import Path
 import cv2
 import mediapipe as mp
+import numpy as np
+from mediapipe.tasks.python.vision.face_landmarker import FaceLandmarksConnections as Connections
 
 MODEL_PATH = Path(__file__).resolve().parents[3] / "data/models/face_landmarker.task"
 
@@ -34,8 +36,33 @@ class FaceDetector:
         self.detector.close()
 
 
-def draw_landmarks(frame, landmarks):
+def _edges(connections):
+    return np.array(sorted({tuple(sorted((c.start, c.end))) for c in connections}), dtype=np.int32)
+
+
+MESH = _edges(Connections.FACE_LANDMARKS_TESSELATION)
+CONTOURS = _edges(Connections.FACE_LANDMARKS_CONTOURS)
+IRISES = _edges(Connections.FACE_LANDMARKS_LEFT_IRIS + Connections.FACE_LANDMARKS_RIGHT_IRIS)
+
+
+def draw_landmarks(frame, landmarks, mode='mesh'):
+    """Only draw actual detected geometry; never synthesize a face or confidence."""
+    if mode not in ('mesh', 'points', 'none'):
+        raise ValueError('Unknown landmark drawing mode')
+    if not landmarks or mode == 'none':
+        return
     height, width = frame.shape[:2]
-    for point in landmarks:
-        cv2.circle(frame, (int(point.x * width), int(point.y * height)),
-                   1, (100, 240, 110), -1, cv2.LINE_AA)
+    xy = np.array([(p.x * width, p.y * height) for p in landmarks])
+    if not np.isfinite(xy).all():
+        return
+    xy = np.clip(xy, [-width, -height], [2*width, 2*height]).astype(np.int32)
+    if mode == 'points':
+        for x, y in xy:
+            cv2.circle(frame, (int(x), int(y)), 1, (130, 245, 125), -1, cv2.LINE_AA)
+        return
+    for edges, color, thickness in ((MESH, (130, 145, 120), 1),
+                                     (CONTOURS, (125, 240, 150), 1),
+                                     (IRISES, (100, 235, 245), 1)):
+        valid = edges[np.max(edges, axis=1) < len(xy)]
+        if len(valid):
+            cv2.polylines(frame, xy[valid], False, color, thickness, cv2.LINE_AA)

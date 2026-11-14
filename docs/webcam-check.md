@@ -1,23 +1,19 @@
-﻿# Kết quả kiểm tra webcam
+﻿# Kiểm tra webcam cho bản minh họa khuôn mặt
 
-Ngày kiểm tra: 14/11/2026, camera 0, khung hình yêu cầu 640×480, CPU/XNNPACK.
+Phiên kiểm tra ngày 14/11/2026, camera 0, chỉ chạy Face Landmarker và vẽ lưới khuôn mặt. Không chạy module tư thế, khoảng cách hoặc hiệu chuẩn.
 
-Môi trường: Python 3.12.10, MediaPipe 0.10.35, OpenCV/contrib 4.14.0.94, Pillow 12.3.0. `pip check` không phát hiện phụ thuộc hỏng.
+Thông số thực tế từ `scripts/check_webcam.py --seconds 20 --camera 0`:
 
-Phiên cuối sau khi đồng bộ thư viện:
-
-| Chỉ số | Kết quả |
+| Chỉ số | Giá trị |
 |---|---:|
-| Thời gian xử lý thực tế | 30,14 giây |
-| Tổng khung hình | 904 |
-| Khung hình có landmarks mặt | 864 |
-| FPS trung bình | 29,99 |
-| Tỷ lệ phát hiện | 95,58% |
-| p95 thời gian suy luận | 16,09 ms |
+| Thời gian xử lý | 20,16 giây |
+| Khung hình | 308 |
+| Khung hình phát hiện mặt | 300 |
+| FPS trung bình | 15,28 |
+| Suy luận trung bình | 13,21 ms |
+| Suy luận p95 | 16,46 ms |
 | Lỗi | Không |
 
-Báo cáo JSON tại `results/logs/webcam-check.json` (không đưa vào Git). Không lưu hình ảnh webcam. Phiên đo dùng worker và vẽ landmarks, không đo thời gian hiển thị Tk hay độ trễ đầu-cuối. 40 khung hình không phát hiện mặt có thể do người dùng rời khung hình hoặc chuyển động/ánh sáng; chưa có nhãn tham chiếu nên không gọi 95,58% là độ chính xác.
+Đây là số đo của riêng phiên webcam này, không phải mức FPS bảo đảm hay độ chính xác landmark. FPS gồm luồng lấy hình và vẽ; thời gian suy luận chỉ đo Face Landmarker. Tỷ lệ khung hình có mặt không phải accuracy. Không lưu ảnh hoặc video webcam.
 
-Kết quả chứng minh tốc độ xử lý gần 30 FPS trong phiên thử này. Chưa có phép đo độ rung/sai lệch vị trí landmark hoặc đánh giá chủ quan về độ mượt khi quay đầu. Cần kiểm tra thêm trong giao diện ở các điều kiện ánh sáng và tư thế khác nhau.
-
-Kiểm tra bổ sung: 2 unit test giải phóng tài nguyên khi lỗi đều đạt; kiểm tra cú pháp đạt; giao diện Tk khởi tạo thành công và đã kiểm tra bố cục trên màn hình laptop.
+Kiểm thử tự động dùng dữ liệu tổng hợp chỉ để xác minh chuyển trạng thái, lớp hiển thị, xuất đúng tọa độ và giải phóng tài nguyên; các dữ liệu đó không dùng trong chương trình minh họa hoặc kết quả webcam trên.
